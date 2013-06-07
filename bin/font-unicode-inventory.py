@@ -82,6 +82,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    font_names = []
+
     for f in args.file:
         # We'll do this early to make it clear which files cause fontforge to spew warnings:
         print("Opening: %s" % f, file=sys.stderr)
@@ -111,3 +113,9 @@ if __name__ == "__main__":
         else:
             print(msg)
             print("\n\t".join(parts))
+
+        font_names.append(font.fullname)
+
+    if args.format == "css":
+        print('Combined CSS font-family:\n\t"%s"' % '", "'.join(font_names),
+              file=sys.stderr)
