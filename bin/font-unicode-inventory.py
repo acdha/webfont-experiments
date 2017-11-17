@@ -9,6 +9,7 @@ from itertools import groupby
 import argparse
 import os
 import sys
+import unicodedata
 
 import fontforge
 
@@ -31,8 +32,10 @@ def get_unicode_ranges(font):
 
     code_points = set(unicode_code_point_iterator(font))
 
-    # Exclude common chaff:
-    code_points.discard(0)
+    # Exclude all characters in the basic latin range, with the understanding that you will use a base font:
+    code_points.discard(0x00A0)  # non-breaking space. Is it safe to exclude category = Zs?
+    code_points.discard(0xFEFF)  # zero-width non-breaking space
+    code_points = [i for i in code_points if i > 0x07F]
 
     for key, group in groupby(enumerate(sorted(code_points)),
                               lambda (index, item): index - item):
@@ -50,13 +53,13 @@ def get_unicode_ranges(font):
 #: CSS @font-face template, escaped for Python string formatting:
 FONT_FACE = """
 @font-face {{
-  font-family: '{full_name}';
+  font-family: "{full_name}";
   font-style: {style};
   font-weight: {weight};
-  src: local('{name}'), local('{full_name}'), url({filename}) format('{format}');
+  src: local("{name}"), local("{full_name}"), url({filename}) format("{format}");
   unicode-range: {unicode_range};
 }}
-"""
+""".lstrip()
 
 
 def print_font_face_declaration(font, parts):
@@ -102,9 +105,9 @@ if __name__ == "__main__":
         parts = []
         for i in ranges:
             if isinstance(i, int):
-                parts.append("U+%04X" % i)
+                parts.append("U+%X" % i)
             else:
-                parts.append("U+%04X-%04X" % i)
+                parts.append("U+%X-%X" % i)
 
         msg = "{filename}: {font.fontname} {font.fullname}".format(filename=f, font=font)
         if args.format == "css":
